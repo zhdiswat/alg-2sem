@@ -1,143 +1,74 @@
-#include <algorithm>
-#include <climits>
 #include <iostream>
-#include <map>
-#include <queue>
 #include <set>
+#include <utility>
 #include <vector>
 
-struct GE {
-  int to;
-  long long c;
-};
+const int cMaxVertexCount = 100000;
+const long long cInfinity = 2009000999LL;
 
-struct P {
-  int n;
-  int u;
-  int d;
-  int i;
-  int o;
-  int k;
-  std::vector<std::vector<int>> tp;
-};
+std::vector<std::vector<std::pair<int, int>>> graph(cMaxVertexCount);
 
-void RdIn(P& p) {
-  std::cin >> p.n >> p.u >> p.d >> p.i >> p.o >> p.k;
-  p.tp.resize(p.k);
-  for (int j = 0; j < p.k; ++j) {
-    int t;
-    std::cin >> t;
-    p.tp[j].resize(t);
-    for (int l = 0; l < t; ++l) {
-      std::cin >> p.tp[j][l];
-    }
-  }
-}
+std::vector<long long> Dijkstra(int start_vertex, int vertex_count) {
+  std::vector<long long> distances(vertex_count, cInfinity);
+  distances[start_vertex] = 0;
+  std::set<std::pair<long long, int>> priority_queue;
+  priority_queue.insert({0, start_vertex});
+  while (!priority_queue.empty()) {
+    long long current_distance = priority_queue.begin()->first;
+    int current_vertex = priority_queue.begin()->second;
+    priority_queue.erase(priority_queue.begin());
 
-std::set<int> GetSf(const P& p) {
-  std::set<int> sf;
-  sf.insert(1);
-  sf.insert(p.n);
-  for (const auto& t : p.tp) {
-    for (int f : t) {
-      sf.insert(f);
-    }
-  }
-  return sf;
-}
-
-std::vector<int> MkFl(const std::set<int>& sf) {
-  std::vector<int> fl(sf.begin(), sf.end());
-  return fl;
-}
-
-std::map<int, int> MkF2i(const std::vector<int>& fl) {
-  std::map<int, int> f2i;
-  for (int i = 0; i < fl.size(); ++i) {
-    f2i[fl[i]] = i;
-  }
-  return f2i;
-}
-
-void AddEl(const std::vector<int>& fl, int u, int d,
-           std::vector<std::vector<GE>>& g) {
-  int nv = fl.size();
-  for (int i = 0; i < nv; ++i) {
-    for (int j = 0; j < nv; ++j) {
-      if (i != j) {
-        int ff = fl[i];
-        int tf = fl[j];
-        long long c = (tf > ff) ? (long long)u * (tf - ff)
-                                : (long long)d * (ff - tf);
-        g[i].push_back({j, c});
-      }
-    }
-  }
-}
-
-void AddTp(const P& p, const std::map<int, int>& f2i,
-           std::vector<std::vector<GE>>& g) {
-  for (const auto& t : p.tp) {
-    for (int f : t) {
-      for (int to : t) {
-        if (f != to) {
-          int fi = f2i.at(f);
-          int ti = f2i.at(to);
-          g[fi].push_back({ti, p.i + p.o});
-        }
-      }
-    }
-  }
-}
-
-std::vector<long long> Djk(const std::vector<std::vector<GE>>& g, int si) {
-  int nv = g.size();
-  std::vector<long long> dist(nv, LLONG_MAX);
-  dist[si] = 0;
-  std::priority_queue<std::pair<long long, int>,
-                      std::vector<std::pair<long long, int>>,
-                      std::greater<>> pq;
-  pq.push({0, si});
-  while (!pq.empty()) {
-    long long c = pq.top().first;
-    int v = pq.top().second;
-    pq.pop();
-    if (c > dist[v]) {
+    if (current_distance > distances[current_vertex]) {
       continue;
     }
-    for (const auto& e : g[v]) {
-      int n = e.to;
-      long long nc = e.c;
-      if (dist[v] + nc < dist[n]) {
-        dist[n] = dist[v] + nc;
-        pq.push({dist[n], n});
+    for (const auto& edge : graph[current_vertex]) {
+      int next_vertex = edge.first;
+      int weight = edge.second;
+      long long new_distance = distances[current_vertex] + weight;
+      if (new_distance < distances[next_vertex]) {
+        if (distances[next_vertex] != cInfinity) {
+          priority_queue.erase({distances[next_vertex], next_vertex});
+        }
+        distances[next_vertex] = new_distance;
+        priority_queue.insert({new_distance, next_vertex});
       }
     }
   }
-  return dist;
-}
-
-long long FSp(const P& p) {
-  std::set<int> sf = GetSf(p);
-  std::vector<int> fl = MkFl(sf);
-  std::map<int, int> f2i = MkF2i(fl);
-  int nv = fl.size();
-  std::vector<std::vector<GE>> g(nv);
-  AddEl(fl, p.u, p.d, g);
-  AddTp(p, f2i, g);
-  int si = f2i[1];
-  int ei = f2i[p.n];
-  std::vector<long long> dist = Djk(g, si);
-  return dist[ei];
+  return distances;
 }
 
 int main() {
   std::ios_base::sync_with_stdio(false);
-  std::cin.tie(nullptr);
-  std::cout.tie(nullptr);
-  P p;
-  RdIn(p);
-  long long r = FSp(p);
-  std::cout << r << "\n";
+  std::cin.tie(0);
+  std::cout.tie(0);
+  int test_count;
+  std::cin >> test_count;
+
+  for (int test = 0; test < test_count; test++) {
+    int vertex_count;
+    std::cin >> vertex_count;
+    int edge_count;
+    std::cin >> edge_count;
+    for (int i = 0; i < vertex_count; i++) {
+      graph[i].clear();
+    }
+    for (int i = 0; i < edge_count; i++) {
+      int from_vertex;
+      std::cin >> from_vertex;
+      int to_vertex;
+      std::cin >> to_vertex;
+      int weight;
+      std::cin >> weight;
+      graph[from_vertex].push_back({to_vertex, weight});
+      graph[to_vertex].push_back({from_vertex, weight});
+    }
+    int start_vertex;
+    std::cin >> start_vertex;
+    std::vector<long long> distances = Dijkstra(start_vertex, vertex_count);
+    for (int v = 0; v < vertex_count; v++) {
+      std::cout << distances[v] << " ";
+    }
+    std::cout << "\n";
+  }
   return 0;
 }
